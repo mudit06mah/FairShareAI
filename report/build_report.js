@@ -392,8 +392,8 @@ const chapters = [
   TCAP("1.3", "Roles and responsibilities"),
   TABLE(["Student", "Enrolment No.", "Primary responsibilities"], [
     ["Aditya Bansal", "23803009", "Cluster deployment on RU: VPN and SSH access, vLLM environment, PBS job scripts, GPU selection and contamination guard; running the 7B and 14B experiments"],
-    ["Sambhav Ghildiyal", "23803005", "Workload generator and replay driver, vLLM engine integration, busy-time and energy metering; laptop proof-of-concept"],
-    ["Mudit Maheshwari", "23803017", "Literature survey and critical analysis; Shapley and billing analysis, calibration study, figures and report"],
+    ["Sambhav Ghildiyal", "23803005", "Literature survey and critical analysis; Shapley and billing analysis, calibration study, figures and report"],
+    ["Mudit Maheshwari", "23803017", "Workload generator and replay driver, vLLM engine integration, busy-time and energy metering; laptop proof-of-concept"],
   ], [20, 16, 64]),
   GAP(),
   H3("1.4.4 Challenges and risk management"),
@@ -1029,8 +1029,8 @@ const appendices = [
   TCAP("IV.1", "Contributions of each team member"),
   TABLE(["Student", "Enrolment No.", "Specific contributions"], [
     ["Aditya Bansal", "23803009", "Set up access to the RU cluster (VPN, SSH, accounts); built the Python and vLLM environment on the cluster and solved the driver, sqlite3 and FlashInfer problems; wrote the PBS job script, GPU picker and completion check; designed and validated the contamination guard (diagnostic and heavy-neighbour tests); ran all 7B and 14B experiments"],
-    ["Sambhav Ghildiyal", "23803005", "Designed the three-tenant workload and wrote the generator; wrote the replay driver and its integration with the vLLM engine; implemented busy-time, energy, latency, cache and KV-memory metering; ran the laptop proof-of-concept"],
-    ["Mudit Maheshwari", "23803017", "Led the literature survey and the critical analysis of the proposal; implemented the Shapley and billing-method analysis, the cross-model comparison and the calibration study; produced the figures; led the writing of the synopsis and this report"],
+    ["Sambhav Ghildiyal", "23803005", "Led the literature survey and the critical analysis of the proposal; implemented the Shapley and billing-method analysis, the cross-model comparison and the calibration study; produced the figures; led the writing of the synopsis and this report"],
+    ["Mudit Maheshwari", "23803017", "Designed the three-tenant workload and wrote the generator; wrote the replay driver and its integration with the vLLM engine; implemented busy-time, energy, latency, cache and KV-memory metering; ran the laptop proof-of-concept"],
   ], [18, 14, 68], { size: 20 }),
 ];
 
