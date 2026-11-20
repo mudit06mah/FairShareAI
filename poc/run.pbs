@@ -1,0 +1,78 @@
+#!/bin/bash
+#PBS -N fairshare
+#PBS -q gpu
+#PBS -l select=1:ncpus=4:ngpus=1:mem=64gb
+#PBS -l walltime=04:00:00
+#PBS -j oe
+#
+# FairShare coalition replays on RU's shared A100s, one KV level per job.
+# Settings come from qsub -v (defaults below). Examples:
+#   smoke test:  qsub -v KV=roomy,SEEDS=0,ONLY=chat,WINDOW=20,REPEAT=0,OUT=results/smoke/runs.jsonl -l walltime=00:40:00 ~/fairshare/poc/run.pbs
+#   real run:    qsub -v KV=roomy ~/fairshare/poc/run.pbs
+# Clean runs already in the results file are skipped, so a job killed by its walltime can just be resubmitted.
+
+# No `module add python311`: RU's python311 module is built without sqlite3, which vLLM needs.
+# ~/fairshare/.venv uses a uv-managed Python instead, and loading the module could put its libpython first.
+
+KV=${KV:-roomy}
+SEEDS=${SEEDS:-"0 1 2 3"}
+MODEL=${MODEL:-Qwen/Qwen2.5-7B-Instruct}
+# Fraction of the 80 GiB A100 vLLM may use (the picker needs this + 3% free). KV levels are the same token counts
+# for every model (roomy 105,632 / tight 22,400 / vtight 13,600 tokens), so their bytes scale with the model.
+case "$MODEL" in
+  *14B*)  # measured (job 15745): 29.3 GiB weights+non-torch, 3.3 activations, 1.4 CUDA graphs = 34.0 GiB, of the
+          # 79.15 GiB vLLM sees; KV 192 KiB/token = 19.3 GiB roomy, 4.1 tight, 2.5 vtight. Leaves ~0.6-1.2 GiB spare.
+    if [ "$KV" = roomy ]; then MEM_UTIL=${MEM_UTIL:-0.69}; else MEM_UTIL=${MEM_UTIL:-0.49}; fi ;;
+  *)      # 7B measured: ~18.9 GiB weights, activations and CUDA graphs; KV 56 KiB/token = 5.7 GiB roomy,
+          # <= 1.2 GiB tight/vtight. Leaves ~0.8-1.3 GiB spare.
+    if [ "$KV" = roomy ]; then MEM_UTIL=${MEM_UTIL:-0.32}; else MEM_UTIL=${MEM_UTIL:-0.27}; fi ;;
+esac
+ANY_GPU=${ANY_GPU:-0}               # 1 = ignore the GPU RU assigned us and take any idle one
+PIN_GPU=${PIN_GPU:-}                # GPU index or UUID to use instead (e.g. to keep every KV level on one GPU)
+WINDOW=${WINDOW:-60}
+REPEAT=${REPEAT:-1}
+ONLY=${ONLY:-}
+PICK_MAX_UTIL=${PICK_MAX_UTIL:-5}   # only start on a GPU that is (nearly) idle; others' work contaminates every replay
+PICK_WAIT=${PICK_WAIT:-1800}        # seconds to wait for such a GPU; keep well below the walltime
+FOREIGN_SM=${FOREIGN_SM:-0}         # other processes' peak SM % tolerated during a replay (0 = none); every row
+                                    # records foreign_sm_max/mean either way, so analysis can check the effect
+FOREIGN_SM_MEAN=${FOREIGN_SM_MEAN:-}  # optional: also flag replays where their mean SM % exceeds this
+QUIET_UTIL=${QUIET_UTIL:-0}         # GPU utilisation % (mean over 3 s before / 2 s after a replay) still counted as
+                                    # quiet; 0 = every sample 0%. Raise it to tolerate a light neighbour's spikes.
+
+PY=~/fairshare/.venv/bin/python
+cd ~/fairshare/poc || exit 1
+export HF_HUB_OFFLINE=1        # model must already be downloaded on the login node
+export VLLM_NO_USAGE_STATS=1
+# FlashInfer's top-k/top-p sampler is compiled on first use, which needs ninja and nvcc; RU's GPU node has neither.
+# Replays decode greedily (temperature 0), so the sampler isn't on the measured path; the PyTorch fallback is equivalent.
+export VLLM_USE_FLASHINFER_SAMPLER=0
+NAME=$(basename "$MODEL" | tr '[:upper:]' '[:lower:]')
+OUT=${OUT:-results/$NAME/runs.jsonl}   # smoke tests pass OUT=results/smoke/runs.jsonl so their short-window rows aren't reused by real runs
+mkdir -p "$(dirname "$OUT")"
+
+echo "job $PBS_JOBID on $(hostname) at $(date): model=$MODEL kv=$KV seeds=[$SEEDS] window=$WINDOW only=[$ONLY]"
+# Several copies of a job can be chained (qsub -W depend=afterany:...) to keep trying for an idle GPU; once one has
+# measured everything, the rest stop here instead of waiting for a GPU they don't need.
+if "$PY" run_experiments.py --check-done --model "$MODEL" --kv-levels "$KV" --seeds $SEEDS --repeat-grand "$REPEAT" \
+    --out "$OUT" ${ONLY:+--only $ONLY}; then
+  echo "nothing left to measure, exiting"; exit 0
+fi
+# Since 2026-11-16 RU's profile sets CUDA_VISIBLE_DEVICES to the GPU assigned to us. Respect it, but still wait
+# until that GPU is idle: the assignment alone doesn't stop other users' processes from running on it.
+ASSIGNED=$CUDA_VISIBLE_DEVICES
+echo "assigned GPU(s) from the environment: [${ASSIGNED:-none}], ANY_GPU=$ANY_GPU, PIN_GPU=[$PIN_GPU], MEM_UTIL=$MEM_UTIL"
+[ "$ANY_GPU" = 1 ] && ASSIGNED=
+[ -n "$PIN_GPU" ] && ASSIGNED=$PIN_GPU
+CUDA_VISIBLE_DEVICES=$("$PY" pick_gpu.py --n 1 --need-frac "$MEM_UTIL" --max-util "$PICK_MAX_UTIL" --wait-max-s "$PICK_WAIT" \
+    ${ASSIGNED:+--only "$ASSIGNED"}) || { echo "no usable GPU, exiting"; exit 2; }
+export CUDA_VISIBLE_DEVICES
+echo "using GPU $CUDA_VISIBLE_DEVICES"
+
+"$PY" run_experiments.py --model "$MODEL" --dtype bfloat16 --gpu-mem-util "$MEM_UTIL" \
+    --kv-levels "$KV" --seeds $SEEDS --window "$WINDOW" --repeat-grand "$REPEAT" --out "$OUT" \
+    --foreign-sm-threshold "$FOREIGN_SM" --quiet-util "$QUIET_UTIL" ${FOREIGN_SM_MEAN:+--foreign-sm-mean-threshold "$FOREIGN_SM_MEAN"} \
+    ${ONLY:+--only $ONLY}
+status=$?
+echo "exit status $status at $(date)"
+exit $status   # so qstat -xf shows the real Exit_status instead of echo's 0

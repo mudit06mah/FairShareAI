@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Node (report builder)
+report/node_modules/
+
+# generated while building the report
+report/toc_pages.json
+report/toc_check.json
+
+# model weights and caches never belong here
+*.safetensors
+*.bin
+.cache/
+
+# personal working notes and documents from other courses
+plan.md
+prompt
+important.txt
+FairShareAI-Proposal.pdf
+MINORRR FINAL BOSS.pdf
+PROJECT_SYNOPSIS_*.pdf
+poc/backup_laptop_*/
