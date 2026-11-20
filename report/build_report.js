@@ -475,7 +475,7 @@ const chapters = [
   B("**Economic.** The purpose of the system is accurate chargeback of an expensive shared resource. The experiments themselves were designed to need few GPU-hours: each memory level of one model runs in a single job of about an hour or less, and runs that were already measured are never repeated (Section 5.3)."),
   B("**Environmental.** Dynamic GPU energy is measured alongside busy time, so the same method supports energy and carbon accounting. A small fixed KV-cache pool let our jobs fit next to other users' work instead of needing a whole GPU, and the contamination guard stopped a job early instead of wasting GPU time on measurements that would be thrown away."),
   B("**Social.** Fair division of cost between teams, and protecting interactive users from the slowdown caused by heavy tenants, are the social goals. We report latency harm separately from cost because no price can undo it."),
-  B("**Political and organisational.** Chargeback decisions can cause disputes between departments. The Shapley value was chosen because its fairness properties can be stated and checked, and every number in this report can be regenerated from the raw data with the published scripts."),
+  B("**Political and organisational.** Chargeback decisions can cause disputes between departments. The Shapley value was chosen because its fairness properties can be stated and checked, and every number in this report can be regenerated from the raw data with the project's scripts."),
   B("**Ethical.** No real user data is used: prompts are random token IDs and no prompt text is stored. Each tenant's prefix cache is kept separate, which avoids the cross-tenant prompt leakage reported in the literature. Discarded measurements are kept in the data with a flag and reported, not silently dropped."),
   B("**Health and safety.** The project involves no physical hardware work; all GPU access is remote. The relevant safety aspects are cyber security and responsible use of a shared facility (Section 4.4)."),
   B("**Sustainability.** The work reuses the institute's existing HPC facility. The code, data and analysis scripts are kept together so that the experiments can be repeated on other models without new development."),
@@ -894,7 +894,7 @@ def shapley(v):
   H2("6.2 Impact on Society, Environmental Sustainability, Ethical Issues and Compliance"),
   P("**Society.** Fair and auditable cost attribution supports trust between the teams and customers that share AI infrastructure, and stops the cost of heavy workloads from falling silently on others. The measured victim-pays effect and the up to 112-fold slowdown of interactive requests show that shared servers need both fair prices and protective scheduling."),
   P("**Environmental sustainability.** Measuring energy per tenant is a step towards per-tenant carbon accounting. By showing that memory contention alone can add nearly half to the GPU time needed for the same work, the project gives operators a measurable reason to reduce it through scheduling and provisioning."),
-  P("**Ethics and compliance.** No personal data was used or stored, tenants' caches were isolated to prevent prompt leakage, the shared cluster was used through its scheduler within its rules, and every discarded measurement is reported. All software is used under its open-source licence, and the results can be reproduced from the published scripts and raw data."),
+  P("**Ethics and compliance.** No personal data was used or stored, tenants' caches were isolated to prevent prompt leakage, the shared cluster was used through its scheduler within its rules, and every discarded measurement is reported. All software is used under its open-source licence, and the results can be reproduced from the project's scripts and raw data."),
 
   H2("6.3 Limitations"),
   ...NL([
@@ -915,7 +915,6 @@ def shapley(v):
     "**Cheaper recalibration** using approximate Shapley methods such as StepSplit, so that prices can be refreshed often without replaying every combination.",
     "**Eviction-aware pricing** that charges the tenant causing an eviction rather than the victim, and the **fair admission scheduler** from the synopsis, compared with VTC, to reduce the interference that no price can undo.",
     "**The FairShareAI platform:** the gateway, the online cost ledger and reports, built on the calibration recipe established here.",
-    "**Publication.** The model-size and memory-pressure results, the victim-pays measurement and the calibration recipe are suitable for a workshop paper or preprint after the generalisation test.",
   ]),
 ];
 
@@ -1015,8 +1014,6 @@ const appendices = [
   H1("ANNEXURE II: OUTCOME OF THE REPORT"),
   P("The outcome of this project is an application: the FairShareAI measurement and attribution toolkit described in Chapters 3 and 4. It replays every combination of tenants on a vLLM inference server, measures GPU busy time and energy with a contamination guard for shared clusters, and computes each tenant's fair (Shapley) share of the cost, the error of each billing method and calibrated token prices. It has been run on a laptop GPU and on the institute's A100 cluster, and every result in this report was produced with it."),
   P("Source code repository: https://github.com/mudit06mah/FairShareAI"),
-  P("We also plan to submit the results as a research paper to a conference or workshop. The strongest contributions for publication are: no fixed token price is fair across model sizes; memory pressure adds a sharing-only cost that grows with model size and defeats benchmark-calibrated prices; the measured victim-pays effect; and a calibration recipe that stays within the error target in every measured condition."),
-  P("[Attach proof of submission or acceptance here when available.]"),
 
   H1("ANNEXURE III: SUSTAINABILITY STATEMENT"),
   P("Large language models are among the most energy-intensive workloads in today's data centres, and shared GPU servers are becoming the normal way to run them inside organisations. This project contributes to more sustainable AI infrastructure in three ways."),
