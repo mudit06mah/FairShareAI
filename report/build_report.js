@@ -1014,7 +1014,7 @@ const appendices = [
 
   H1("ANNEXURE II: OUTCOME OF THE REPORT"),
   P("The outcome of this project is an application: the FairShareAI measurement and attribution toolkit described in Chapters 3 and 4. It replays every combination of tenants on a vLLM inference server, measures GPU busy time and energy with a contamination guard for shared clusters, and computes each tenant's fair (Shapley) share of the cost, the error of each billing method and calibrated token prices. It has been run on a laptop GPU and on the institute's A100 cluster, and every result in this report was produced with it."),
-  P("Source code repository: [add link]"),
+  P("Source code repository: https://github.com/mudit06mah/FairShareAI"),
   P("We also plan to submit the results as a research paper to a conference or workshop. The strongest contributions for publication are: no fixed token price is fair across model sizes; memory pressure adds a sharing-only cost that grows with model size and defeats benchmark-calibrated prices; the measured victim-pays effect; and a calibration recipe that stays within the error target in every measured condition."),
   P("[Attach proof of submission or acceptance here when available.]"),
 
